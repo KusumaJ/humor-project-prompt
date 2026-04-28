@@ -24,6 +24,15 @@ const nextConfig: NextConfig = {
     ],
   },
   /* config options here */
+  async redirects() {
+    return [
+      {
+        source: '/prompt-chain-tool/flavor',
+        destination: '/prompt-chain-tool',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

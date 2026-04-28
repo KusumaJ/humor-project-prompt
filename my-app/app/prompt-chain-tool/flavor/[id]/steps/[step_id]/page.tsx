@@ -18,7 +18,6 @@ async function updateStep(formData: FormData) {
     const humor_flavor_step_type_id = Number(formData.get('humor_flavor_step_type_id'));
     const llm_system_prompt = formData.get('llm_system_prompt') as string;
     const llm_user_prompt = formData.get('llm_user_prompt') as string;
-    const description = formData.get('description') as string;
 
     try {
         await updateHumorFlavorStep(stepId, {
@@ -30,7 +29,6 @@ async function updateStep(formData: FormData) {
             humor_flavor_step_type_id,
             llm_system_prompt,
             llm_user_prompt,
-            description,
         });
     } catch (error) {
         console.error('Error updating humor flavor step:', error);
@@ -81,7 +79,7 @@ export default async function HumorFlavorStepDetailPage({ params }: { params: { 
 
     return (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Edit Step for "{humorFlavor.slug}": <CopyToClipboard textToCopy={humorFlavorStep.id}>{humorFlavorStep.order_by}. {humorFlavorStep.description?.substring(0, 20)}...</CopyToClipboard></h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Edit Step for "{humorFlavor.slug}": <CopyToClipboard textToCopy={humorFlavorStep.id}>{humorFlavorStep.order_by}.</CopyToClipboard></h2>
 
             <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">
                 <p>Created: {new Date(humorFlavorStep.created_datetime_utc).toLocaleString()}</p>
@@ -101,18 +99,6 @@ export default async function HumorFlavorStepDetailPage({ params }: { params: { 
                         name="order_by"
                         required
                         defaultValue={humorFlavorStep.order_by}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                    <input
-                        type="text"
-                        id="description"
-                        name="description"
-                        defaultValue={humorFlavorStep.description || ''}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
                     />
                 </div>

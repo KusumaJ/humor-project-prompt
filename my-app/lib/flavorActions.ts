@@ -98,11 +98,17 @@ export async function createHumorFlavorStep(step: Omit<HumorFlavorStep, 'id' | '
   return { ...data, id: String(data.id), humor_flavor_id: String(data.humor_flavor_id) }; // Convert IDs back to string
 }
 
-export async function getHumorFlavorStepsByFlavorId(flavorId: string): Promise<HumorFlavorStep[]> {
+export async function getHumorFlavorStepsByFlavorId(flavorId: string): Promise<any[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('humor_flavor_steps')
-        .select('*')
+        .select(`
+            *,
+            llm_models (name),
+            llm_input_types (slug),
+            llm_output_types (slug),
+            humor_flavor_step_types (slug)
+        `)
         .eq('humor_flavor_id', Number(flavorId)) // Convert to number for bigint
         .order('order_by', { ascending: true });
 
@@ -116,6 +122,10 @@ export async function getHumorFlavorStepsByFlavorId(flavorId: string): Promise<H
         id: String(step.id),
         humor_flavor_id: String(step.humor_flavor_id),
         llm_temperature: step.llm_temperature !== null ? Number(step.llm_temperature) : null, // Ensure numeric for API
+        model_name: step.llm_models?.name,
+        input_type_slug: step.llm_input_types?.slug,
+        output_type_slug: step.llm_output_types?.slug,
+        step_type_slug: step.humor_flavor_step_types?.slug
     })) : [];
 }
 

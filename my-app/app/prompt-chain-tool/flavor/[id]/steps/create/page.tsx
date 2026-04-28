@@ -16,7 +16,6 @@ async function createStep(formData: FormData) {
     const humor_flavor_step_type_id = Number(formData.get('humor_flavor_step_type_id'));
     const llm_system_prompt = formData.get('llm_system_prompt') as string;
     const llm_user_prompt = formData.get('llm_user_prompt') as string;
-    const description = formData.get('description') as string;
 
     try {
         await createHumorFlavorStep({
@@ -29,7 +28,6 @@ async function createStep(formData: FormData) {
             humor_flavor_step_type_id,
             llm_system_prompt,
             llm_user_prompt,
-            description,
         });
     } catch (error) {
         console.error('Error creating humor flavor step:', error);
@@ -66,17 +64,6 @@ export default async function CreateHumorFlavorStepPage({ params }: { params: { 
                         name="order_by"
                         required
                         defaultValue={0}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                    <input
-                        type="text"
-                        id="description"
-                        name="description"
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
                     />
                 </div>

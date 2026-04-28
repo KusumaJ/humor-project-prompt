@@ -53,9 +53,9 @@ export default async function AdminFlavorStepsPage({
     if (searchQuery) {
         allHumorFlavorSteps = allHumorFlavorSteps.filter(step => {
             if (filterBy === 'id') return step.id.includes(searchQuery);
-            if (filterBy === 'description') return step.description?.includes(searchQuery);
-            if (filterBy === 'humor_flavor_step_type_id') return String(step.humor_flavor_step_type_id).includes(searchQuery);
-            if (filterBy === 'order_by') return String(step.order_by).includes(searchQuery);
+            if (filterBy === 'system_prompt') return step.llm_system_prompt?.toLowerCase().includes(searchQuery.toLowerCase());
+            if (filterBy === 'user_prompt') return step.llm_user_prompt?.toLowerCase().includes(searchQuery.toLowerCase());
+            if (filterBy === 'model') return step.model_name?.toLowerCase().includes(searchQuery.toLowerCase());
             return true;
         });
     }
@@ -72,7 +72,11 @@ export default async function AdminFlavorStepsPage({
             display_id: <span title={step.id}>{step.id.substring(0, 8)}...</span>,
             created_at_formatted: new Date(step.created_datetime_utc).toLocaleDateString(),
             modified_at_formatted: new Date(step.modified_datetime_utc).toLocaleDateString(),
-            display_humor_flavor_step_type_id: <span title={String(step.humor_flavor_step_type_id)}>{String(step.humor_flavor_step_type_id)}</span>,
+            display_temp: step.llm_temperature,
+            display_system_prompt: <div className="max-w-xs truncate" title={step.llm_system_prompt}>{step.llm_system_prompt}</div>,
+            display_user_prompt: <div className="max-w-xs truncate" title={step.llm_user_prompt}>{step.llm_user_prompt}</div>,
+            display_model: step.model_name,
+            display_step_type: step.step_type_slug,
             order_by: step.order_by,
             actions: (
                 <div className="flex space-x-2 items-center">
@@ -114,20 +118,21 @@ export default async function AdminFlavorStepsPage({
     }) || [];
 
     const humorFlavorStepHeaders = [
-        { key: 'display_id', label: 'ID' },
-        { key: 'created_at_formatted', label: 'Created' },
-        { key: 'modified_at_formatted', label: 'Modified' },
         { key: 'order_by', label: 'Order' },
-        { key: 'description', label: 'Description' },
-        { key: 'display_humor_flavor_step_type_id', label: 'Step Type ID' },
+        { key: 'display_model', label: 'Model' },
+        { key: 'display_temp', label: 'Temp' },
+        { key: 'display_step_type', label: 'Step Type' },
+        { key: 'display_system_prompt', label: 'System Prompt' },
+        { key: 'display_user_prompt', label: 'User Prompt' },
+        { key: 'modified_at_formatted', label: 'Modified' },
         { key: 'actions', label: 'Actions' },
     ];
 
     const humorFlavorStepFilterOptions: FilterOption[] = [
+        { key: 'system_prompt', label: 'System Prompt', type: 'text' },
+        { key: 'user_prompt', label: 'User Prompt', type: 'text' },
+        { key: 'model', label: 'Model Name', type: 'text' },
         { key: 'id', label: 'ID', type: 'text' },
-        { key: 'description', label: 'Description', type: 'text' },
-        { key: 'humor_flavor_step_type_id', label: 'Step Type ID', type: 'text' },
-        { key: 'order_by', label: 'Order By', type: 'text' },
     ];
 
     return (
@@ -143,12 +148,12 @@ export default async function AdminFlavorStepsPage({
                 </Link>
             </div>
 
-            <FilterControls filterOptions={humorFlavorStepFilterOptions} defaultFilterKey="description" placeholder="Search humor flavor steps..." />
+            <FilterControls filterOptions={humorFlavorStepFilterOptions} defaultFilterKey="system_prompt" placeholder="Search humor flavor steps..." />
             <div className="my-8"></div>
             <AdminTable
                 headers={humorFlavorStepHeaders}
                 data={processedHumorFlavorSteps}
-                cardTitleKey="description"
+                cardTitleKey="model_name"
             />
             <PaginationControls
                 currentPage={currentPage}
