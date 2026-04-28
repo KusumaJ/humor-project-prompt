@@ -86,7 +86,7 @@ export async function createHumorFlavorStep(step: Omit<HumorFlavorStep, 'id' | '
       humor_flavor_step_type_id: step.humor_flavor_step_type_id,
       llm_system_prompt: step.llm_system_prompt,
       llm_user_prompt: step.llm_user_prompt,
-      description: step.description,
+      description: step.description ?? null,
     })
     .select()
     .single();

@@ -65,7 +65,7 @@ export interface HumorFlavorStep {
     humor_flavor_step_type_id: number;
     llm_system_prompt: string | null;
     llm_user_prompt: string | null;
-    description: string | null;
+    description?: string | null;
     created_by_user_id: string;
     modified_by_user_id: string;
 }
