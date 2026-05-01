@@ -1,156 +1,169 @@
 // lib/api.ts
 
-import { createClient as createClientBrowser } from "@/utils/supabase/client"; // Use browser-side for auth token
-// HumorFlavor type is no longer needed here after moving CRUD functions
+import { createClient as createClientBrowser } from "@/utils/supabase/client";
 
 const API_BASE_URL = "https://api.almostcrackd.ai";
 
-async function getAuthToken(): Promise<string> {
-  const supabase = createClientBrowser(); // Use browser client for session
-  const { data, error } = await supabase.auth.getSession();
+interface Caption {
+  id: string;
+  content: string;
+}
 
-  if (error || !data?.session) {
-    throw new Error("User not authenticated.");
+/**
+ * Maps technical backend error messages to user-friendly ones.
+ */
+function getFriendlyErrorMessage(errorData: any, status: number): string {
+  const technicalMessage = errorData?.message || errorData?.statusMessage || "";
+  
+  // Specific pipeline failures
+  if (technicalMessage.includes("No output found for step")) {
+    return "The AI pipeline failed to complete one of the steps. This usually happens if the prompt was too restrictive or the model timed out. Please try again.";
   }
+
+  if (status === 502 || status === 503) {
+    return "The caption server is temporarily overloaded or undergoing maintenance. Please try again in a few seconds.";
+  }
+
+  if (status === 504) {
+    return "The request timed out. Generating this caption took longer than expected. Please try again.";
+  }
+
+  return technicalMessage || `Server returned an error (${status}).`;
+}
+
+/**
+ * Normalizes various LLM output shapes into a standard Caption array.
+ */
+function normalizeCaptions(data: any): Caption[] {
+  const fallbackId = () => `fallback-${Math.random().toString(36).substr(2, 9)}`;
+
+  if (Array.isArray(data)) {
+    return data.map((item) => {
+      if (typeof item === 'string') return { id: fallbackId(), content: item };
+      if (typeof item === 'object' && item !== null) {
+        return {
+          id: String(item.id || item.imageId || fallbackId()),
+          content: String(item.content || item.text || item.caption || JSON.stringify(item))
+        };
+      }
+      return { id: fallbackId(), content: String(item) };
+    });
+  }
+
+  if (typeof data === 'object' && data !== null) {
+    const content = data.content || data.text || data.caption || (Object.keys(data).length > 0 ? JSON.stringify(data) : null);
+    if (content) {
+      return [{ id: String(data.id || fallbackId()), content: String(content) }];
+    }
+  }
+
+  const rawContent = typeof data === 'string' ? data : String(data || "No content returned.");
+  return [{ id: 'raw-output', content: rawContent }];
+}
+
+/**
+ * Attempts to parse JSON, with a fallback to raw text. 
+ * Provides human-readable messages for API failures.
+ */
+async function safeParseResponse(response: Response, defaultErrorMessage: string): Promise<any> {
+  const text = await response.text();
+  
+  if (!response.ok) {
+    let errorData: any = null;
+    try {
+      errorData = JSON.parse(text);
+    } catch {
+      // Not JSON
+    }
+
+    const friendlyMessage = getFriendlyErrorMessage(errorData, response.status);
+    throw new Error(friendlyMessage || defaultErrorMessage);
+  }
+
+  try {
+    const sanitized = text.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(sanitized);
+  } catch {
+    return text;
+  }
+}
+
+async function getAuthToken(): Promise<string> {
+  const supabase = createClientBrowser();
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data?.session) throw new Error("User not authenticated.");
   return data.session.access_token;
 }
 
-interface PresignedUrlResponse {
-  presignedUrl: string;
-  cdnUrl: string;
-}
-
-export async function generatePresignedUrl(
-  contentType: string,
-): Promise<PresignedUrlResponse> {
+export async function generatePresignedUrl(contentType: string): Promise<{ presignedUrl: string; cdnUrl: string }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/pipeline/generate-presigned-url`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ contentType }),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to generate presigned URL.");
-  }
-
-  return response.json();
+  return await safeParseResponse(response, "Failed to prepare upload.");
 }
 
-export async function uploadImageBytes(
-  presignedUrl: string,
-  contentType: string,
-  file: Blob,
-): Promise<void> {
+export async function uploadImageBytes(presignedUrl: string, contentType: string, file: Blob): Promise<void> {
   const response = await fetch(presignedUrl, {
     method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-    },
+    headers: { "Content-Type": contentType },
     body: file,
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to upload image bytes.");
-  }
+  if (!response.ok) throw new Error("The image upload was interrupted. Please check your connection.");
 }
 
-interface RegisterImageResponse {
-  imageId: string;
-  now: number;
-}
-
-export async function registerImageUrl(
-  cdnUrl: string,
-  isCommonUse: boolean = false,
-): Promise<RegisterImageResponse> {
+export async function registerImageUrl(cdnUrl: string, isCommonUse: boolean = false): Promise<{ imageId: string; now: number }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/pipeline/upload-image-from-url`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ imageUrl: cdnUrl, isCommonUse }),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to register image URL.");
-  }
-
-  return response.json();
+  return await safeParseResponse(response, "Failed to register image.");
 }
 
-export async function generateCaptions(imageId: string, humorFlavorId?: string): Promise<any[]> {
+export async function generateCaptions(imageId: string, humorFlavorId?: string): Promise<Caption[]> {
   const token = await getAuthToken();
-  const body: { imageId: string; humorFlavorId?: string | number } = { imageId };
+  const body: any = { imageId };
   if (humorFlavorId) {
-    const numericHumorFlavorId = Number(humorFlavorId);
-    if (!isNaN(numericHumorFlavorId)) {
-      body.humorFlavorId = numericHumorFlavorId; // Send as number if valid
-    } else {
-      body.humorFlavorId = humorFlavorId; // Keep as string otherwise
-    }
+    const numericId = Number(humorFlavorId);
+    body.humorFlavorId = isNaN(numericId) ? humorFlavorId : numericId;
   }
-  console.log("Sending generateCaptions request with body:", JSON.stringify(body));
-
+  
   const response = await fetch(`${API_BASE_URL}/pipeline/generate-captions`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to generate captions.");
-  }
-
-  return response.json();
+  const data = await safeParseResponse(response, "Failed to generate captions.");
+  return normalizeCaptions(data);
 }
 
 export async function processImageAndGenerateCaptions(
   input: { file?: File; imageUrl?: string }, humorFlavorId?: string,
-): Promise<any[]> {
+): Promise<Caption[]> {
   try {
     let imageId: string;
-
     if (input.file) {
-      // Process file upload
       const { presignedUrl, cdnUrl } = await generatePresignedUrl(input.file.type);
-      console.log("Generated Presigned URL:", presignedUrl);
-      console.log("CDN URL:", cdnUrl);
-
       await uploadImageBytes(presignedUrl, input.file.type, input.file);
-      console.log("Image bytes uploaded successfully.");
-
-      const { imageId: registeredImageId } = await registerImageUrl(cdnUrl);
-      imageId = registeredImageId;
-      console.log("Image registered with ID:", imageId);
-
+      const { imageId: regId } = await registerImageUrl(cdnUrl);
+      imageId = regId;
     } else if (input.imageUrl) {
-      // Process image URL directly
-      const { imageId: registeredImageId } = await registerImageUrl(input.imageUrl);
-      imageId = registeredImageId;
-      console.log("Image registered with ID from URL:", imageId);
+      const { imageId: regId } = await registerImageUrl(input.imageUrl);
+      imageId = regId;
     } else {
-      throw new Error("No image file or URL provided.");
+      throw new Error("No image provided.");
     }
 
-    // Step 4: Generate captions from the registered image
-    const captions = await generateCaptions(imageId, humorFlavorId);
-    console.log("Captions generated:", captions);
-
-    return captions;
+    return await generateCaptions(imageId, humorFlavorId);
   } catch (error: any) {
-    console.error("Error in image processing pipeline:", error.message);
+    console.error("Pipeline Error:", error.message);
     throw error;
   }
 }

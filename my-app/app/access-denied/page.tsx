@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 export default async function AccessDeniedPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
@@ -15,13 +13,14 @@ export default async function AccessDeniedPage() {
                 </div>
 
                 <div className="space-y-4">
-                    <Link
-                        href="/auth/signin"
-                        className="block w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium transition-colors"
-                    >
-                        Log in with another email
-                    </Link>
-
+                    <form action="/auth/signout" method="post">
+                        <button
+                            type="submit"
+                            className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium transition-colors"
+                        >
+                            Log out and try another email
+                        </button>
+                    </form>
                 </div>
 
                 <p className="mt-8 text-sm text-gray-500 dark:text-gray-500">

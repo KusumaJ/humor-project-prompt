@@ -5,13 +5,16 @@ import React from 'react';
 interface DuplicateFlavorButtonProps {
     flavorId: string;
     flavorSlug: string;
-    action: (formData: FormData) => Promise<void>;
+    action: (formData: FormData) => Promise<string | undefined>;
 }
 
 export function DuplicateFlavorButton({ flavorId, flavorSlug, action }: DuplicateFlavorButtonProps) {
     const handleAction = async (formData: FormData) => {
         if (window.confirm(`Are you sure you want to duplicate the humor flavor "${flavorSlug}"? This will also copy all of its steps.`)) {
-            await action(formData);
+            const result = await action(formData);
+            if (result) {
+                alert(result);
+            }
         }
     };
 

@@ -80,13 +80,31 @@ export default function TestHumorFlavorPage({ params }: { params: { id: string }
             {error && <p className="mt-4 text-red-600 dark:text-red-400">Error: {error}</p>}
 
             {captions.length > 0 && (
-                <div className="mt-6">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Generated Captions:</h3>
-                    <ul className="list-disc list-inside space-y-2">
-                        {captions.map((caption, index) => (
-                            <li key={caption.id || index} className="text-gray-800 dark:text-gray-200">{caption.content}</li>
+                <div className="mt-8 space-y-4">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-2 dark:border-gray-700">
+                        Generated Results
+                    </h3>
+                    <div className="grid gap-4">
+                        {captions.map((caption) => (
+                            <div 
+                                key={caption.id} 
+                                className={`p-4 rounded-lg border shadow-sm ${
+                                    caption.id === 'raw-output' 
+                                        ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' 
+                                        : 'bg-gray-50 border-gray-200 dark:bg-gray-700 dark:border-gray-600'
+                                }`}
+                            >
+                                {caption.id === 'raw-output' && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1 block">
+                                        Unstructured Response
+                                    </span>
+                                )}
+                                <p className="text-gray-800 dark:text-gray-200 leading-relaxed italic">
+                                    "{caption.content}"
+                                </p>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             )}
         </div>

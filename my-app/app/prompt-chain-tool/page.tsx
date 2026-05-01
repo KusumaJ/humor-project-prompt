@@ -3,23 +3,11 @@ import { AdminTable } from '@/components/AdminTable';
 import { FilterControls, FilterOption } from '@/components/FilterControls';
 import { PaginationControls } from '@/components/PaginationControls';
 import Link from 'next/link';
-import { duplicateHumorFlavor } from '@/lib/flavorActions';
+import { handleDuplicateAction } from '@/lib/flavorServerActions';
 import { redirect } from 'next/navigation';
 import { DuplicateFlavorButton } from '@/components/DuplicateFlavorButton';
 
 const DEFAULT_PAGE_SIZE = 10;
-
-// Server Action for duplication
-async function handleDuplicate(formData: FormData) {
-    'use server';
-    const flavorId = formData.get('flavorId') as string;
-    try {
-        const newFlavor = await duplicateHumorFlavor(flavorId);
-        redirect(`/prompt-chain-tool/flavor/${newFlavor.id}`);
-    } catch (error) {
-        console.error('Error in handleDuplicate:', error);
-    }
-}
 
 export default async function PromptChainToolHomePage({
     searchParams,
@@ -77,7 +65,7 @@ export default async function PromptChainToolHomePage({
                 <DuplicateFlavorButton 
                     flavorId={String(flavor.id)} 
                     flavorSlug={flavor.slug} 
-                    action={handleDuplicate} 
+                    action={handleDuplicateAction} 
                 />
                 <Link
                     href={`/prompt-chain-tool/flavor/${flavor.id}/steps`}

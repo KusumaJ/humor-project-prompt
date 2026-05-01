@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-    title: 'Admin Panel',
+    title: 'Prompt Tool',
     description: 'Protected admin panel',
 }
 
