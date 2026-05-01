@@ -1,33 +1,23 @@
-import { createHumorFlavor } from '@/lib/flavorActions';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { createFlavorAction } from '@/lib/flavorServerActions';
 import { SubmitButton } from '@/components/SubmitButton';
+import { useActionState } from 'react';
 
-// Server Action
-async function createFlavor(formData: FormData) {
-    'use server';
+export default function CreateFlavorPage() {
+    const [state, formAction] = useActionState(createFlavorAction, { error: null });
 
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const is_pinned = formData.get('is_pinned') === 'on';
-
-    try {
-        await createHumorFlavor({ slug, description, is_pinned });
-    } catch (error) {
-        console.error('Error creating humor flavor:', error);
-        // In a real app, you might want to return an error state
-        // For now, re-throw or handle more gracefully
-        throw error;
-    }
-
-    redirect('/prompt-chain-tool'); // Redirect back to list after creation
-}
-
-export default async function CreateFlavorPage() {
     return (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 max-w-2xl mx-auto">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Create New Humor Flavor</h2>
 
-            <form action={createFlavor} className="space-y-6">
+            {state?.error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {state.error}
+                </div>
+            )}
+
+            <form action={formAction} className="space-y-6">
                 {/* Slug */}
                 <div>
                     <label htmlFor="slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Slug</label>
@@ -66,7 +56,7 @@ export default async function CreateFlavorPage() {
                 </div>
 
                 <div className="flex justify-start">
-                    <SubmitButton formAction={createFlavor} pendingText="Creating...">Create Humor Flavor</SubmitButton>
+                    <SubmitButton pendingText="Creating...">Create Humor Flavor</SubmitButton>
                 </div>
             </form>
         </div>

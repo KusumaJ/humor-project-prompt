@@ -14,6 +14,9 @@ export async function createHumorFlavor(flavor: Omit<HumorFlavor, 'id' | 'create
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      throw new Error(`A flavor with the slug "${flavor.slug}" already exists. Please use a unique slug.`);
+    }
     console.error('Error creating humor flavor:', error);
     throw new Error(error.message);
   }
@@ -51,6 +54,9 @@ export async function updateHumorFlavor(id: string, updates: Partial<Omit<HumorF
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      throw new Error(`A flavor with the slug "${updates.slug}" already exists. Please use a unique slug.`);
+    }
     console.error('Error updating humor flavor:', error);
     throw new Error(error.message);
   }
